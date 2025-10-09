@@ -11,7 +11,6 @@ import SwiftUI
 struct HomeView: View {
     @Environment(\.dismiss) var dismiss
     @State private var showInfo = false
-    @State private var showSettings = false
     @Namespace private var infoSpace
     
     @State private var vm: XcodeViewModel
@@ -70,15 +69,8 @@ struct HomeView: View {
                     .animation(.default, value: vm.releases.count)
                 }
             }
-            .navigationTitle("Xcode")
-            .navigationSubtitle("Releases")
+            .navigationTitle("Home")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Help", systemImage: "questionmark") {
-                        showSettings.toggle()
-                    }
-                }
-                
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button("Draw", systemImage: "pencil") {
                         
@@ -96,19 +88,16 @@ struct HomeView: View {
                 }
                 .matchedTransitionSource(id: "info", in: infoSpace)
                 
-                ToolbarItem(placement: .bottomBar) {
-                    Button("New", systemImage: "plus") {
-                        
-                    }
-                }
+//                ToolbarItem(placement: .bottomBar) {
+//                    Button("New", systemImage: "plus") {
+//                        
+//                    }
+//                }
             }
             .sheet(isPresented: $showInfo) {
                 InfoView()
                     .presentationDetents([.medium, .large])
                     .navigationTransition(.zoom(sourceID: "info", in: infoSpace))
-            }
-            .fullScreenCover(isPresented: $showSettings) {
-                SettingsView()
             }
         }
         // первая загрузка

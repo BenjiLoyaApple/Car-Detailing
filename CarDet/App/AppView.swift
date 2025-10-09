@@ -10,19 +10,19 @@ import SwiftUI
 struct AppView: View {
     @State var appState: AppState = AppState()
     ///Theme
-  //  @AppStorage("userTheme") private var userTheme: Theme = .systemDefault
+    //  @AppStorage("userTheme") private var userTheme: Theme = .systemDefault
     
     var body: some View {
         AppViewBuilder(
             showTabBar: appState.showTabBar,
             tabbarView: {
-                HomeView()
+                ContentViewTab()
             },
             onboardingView: {
                 OnBoardingView()
             }
         )
-     //   .preferredColorScheme(userTheme.colorScheme)
+        //   .preferredColorScheme(userTheme.colorScheme)
         .environment(appState)
     }
 }
