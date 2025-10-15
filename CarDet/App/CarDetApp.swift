@@ -27,11 +27,11 @@ struct CarDetApp: App {
                     
 //                } else if isFaceIDAuthenticated || !isFaceIDEnabled {
                     // Основное приложение
-                //    RootToastView {
+                    RootToastView {
                 //        RouterView { _ in
                             AppView()
               //          }
-               //     }
+                    }
 //                } else {
                     // Индикатор загрузки перед Face ID
 //                    ProgressView("Authenticating...")

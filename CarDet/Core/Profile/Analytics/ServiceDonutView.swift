@@ -192,48 +192,36 @@ struct MonthlyServiceAnalyticsView: View {
     //MARK: - Placeholder
     @ViewBuilder
     private func ActivitySummaryPlaceholder() -> some View {
-        let donutSize: CGFloat = 160
+        let donutSize: CGFloat = 220
 
         HStack(alignment: .top, spacing: 40) {
-            VStack(alignment: .leading, spacing: 30) {
+            VStack(alignment: .center, spacing: 30) {
                 Circle()
-                    .stroke(Color.primary.opacity(0.08), lineWidth: 20)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 30)
                     .frame(width: donutSize, height: donutSize)
                     .overlay {
-                        VStack(spacing: 6) {
-                            placeholderBar(width: 32, height: 32, alpha: 0.15)
-                            placeholderBar(width: 56, height: 14, alpha: 0.1, corner: 6)
+                        VStack(spacing: 10) {
+                            placeholderBar(width: 110, height: 32, alpha: 0.15)
+                            placeholderBar(width: 90, height: 12, alpha: 0.1, corner: 6)
                         }
                     }
                 
-                VStack(spacing: 10) {
-                    ForEach(0..<2, id: \.self) { _ in
-                        HStack(spacing: 14) {
-                            ForEach(0..<2, id: \.self) { _ in
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(Color.primary.opacity(0.10))
-                                        .frame(width: 8, height: 8)
-                                    placeholderBar(width: 55, height: 8, alpha: 0.10)
-                                }
-                            }
-                        }
-                    }
+                VStack(alignment: .leading, spacing: 8) {
+                    RoundedRectangle(cornerRadius: 16)
+                        .frame(height: 30)
+                        .foregroundStyle(.gray.opacity(0.2))
+                        .padding(.vertical, 10)
+                        .padding(.bottom, 10)
+
+                    placeholderMetricRow(labelWidth: 152, valueWidth: 80)
+                    placeholderMetricRow(labelWidth: 100, valueWidth: 80)
+                    placeholderMetricRow(labelWidth: 146, valueWidth: 60)
+                    placeholderMetricRow(labelWidth: 124, valueWidth: 80)
                 }
             }
             .padding(.leading, 10)
             
-            VStack(alignment: .leading, spacing: 6) {
-                RoundedRectangle(cornerRadius: 16)
-                    .frame(height: 30)
-                    .foregroundStyle(.gray.opacity(0.2))
-                    .padding(.bottom, 10)
-
-                placeholderMetricRow(labelWidth: 52, valueWidth: 22)
-                placeholderMetricRow(labelWidth: 70, valueWidth: 22)
-                placeholderMetricRow(labelWidth: 46, valueWidth: 11)
-                placeholderMetricRow(labelWidth: 64, valueWidth: 22)
-            }
+            
             
         }
         .padding(.top, 10)
@@ -242,6 +230,9 @@ struct MonthlyServiceAnalyticsView: View {
     private func placeholderMetricRow(labelWidth: CGFloat, valueWidth: CGFloat) -> some View {
         HStack(spacing: 8) {
             placeholderBar(width: labelWidth, height: 10, alpha: 0.10)
+            
+            Spacer()
+            
             placeholderBar(width: valueWidth, height: 14, alpha: 0.16)
         }
     }
@@ -257,7 +248,7 @@ struct MonthlyServiceAnalyticsView: View {
 // MARK: - Preview
 #Preview("Services Donut") {
     VStack(spacing: 40) {
-     //   MonthlyServiceAnalyticsView(isLoading: true) { _ in [] }
+        MonthlyServiceAnalyticsView(isLoading: true) { _ in [] }
 
         MonthlyServiceAnalyticsView(isLoading: false) { month in
             ServiceAnalytics.revenueByService(

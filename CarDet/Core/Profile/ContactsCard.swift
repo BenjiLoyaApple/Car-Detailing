@@ -8,8 +8,8 @@
 import SwiftUI
 
 struct ContactInfoCard: View {
-    var title: String = "Personal Info"
-    var icon: String = "at"
+    var title: String = "Personal Information"
+    var icon: String = "person"
 
     var email: String? = "john.smith@example.com"
     var phone: String? = "+1 (277) 455 1693"
@@ -20,15 +20,14 @@ struct ContactInfoCard: View {
             CardHeader(icon: icon, title: title)
 
             if let email {
-                InfoRow(icon: "envelope.fill", title: "Email", value: email)
+                InfoRow(icon: "at", title: "Email", value: email)
             }
             
             if let phone {
-                InfoRow(icon: "phone.fill", title: "Phone", value: phone)
+                InfoRow(icon: "phone", title: "Phone", value: phone)
             }
 
             InfoRow(icon: "mappin.and.ellipse", title: "City", value: city.displayName)
-
         }
     }
 }

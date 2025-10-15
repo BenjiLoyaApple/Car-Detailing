@@ -5,51 +5,6 @@
 //  Created by BenjiLoya on 09.10.2025.
 //
 
-//import SwiftUI
-//
-//struct ProfileView: View {
-//    @State private var showSettings = false
-//    
-//    var body: some View {
-//        NavigationStack {
-//            VStack {
-//                
-//            }
-//            .navigationTitle("Profile")
-//            .navigationSubtitle("Benji Loya")
-//            .toolbar {
-//                ToolbarItem(placement: .topBarLeading) {
-//                    Button("info", systemImage: "info") {
-////                     showInfo.toggle()
-//                    }
-//                }
-//                
-//                ToolbarSpacer(.fixed, placement: .topBarTrailing)
-//                ToolbarItem(placement: .topBarTrailing) {
-//                    Button("Settings", systemImage: "gear") {
-//                        showSettings.toggle()
-//                    }
-//                }
-//            //    .matchedTransitionSource(id: "info", in: infoSpace)
-//                
-////                ToolbarItem(placement: .bottomBar) {
-////                    Button("New", systemImage: "plus") {
-////
-////                    }
-////                }
-//            }
-//            .fullScreenCover(isPresented: $showSettings) {
-//                SettingsView()
-//            }
-//        }
-//    }
-//}
-//
-//#Preview {
-//    ProfileView()
-//}
-
-
 import SwiftUI
 
 struct ProfileView: View {
@@ -58,11 +13,6 @@ struct ProfileView: View {
     @State private var avatarData: Data? = nil
     @State private var isLoading: Bool = true
 
-//    @StateObject private var taskStore = TaskStore<TaskModel>(loader: {
-//        try? await Task.sleep(for: .seconds(2))
-//        return TaskModel.mocks
-//    })
-    
     var body: some View {
         NavigationStack {
             GeometryReader { geo in
@@ -99,6 +49,7 @@ struct ProfileSubview: View {
     
     // NEW: флаг для навигации к SettingsView
     @State private var goToSettings: Bool = false
+    @State private var goToEditContacts: Bool = false
 
     var body: some View {
         let isHavingNotch = safeArea.bottom != 0
@@ -154,40 +105,23 @@ struct ProfileSubview: View {
                         city: user.city
                     )
                     .anyButton(.press) {
-                        // openEditContacts()
+                         openEditContacts()
                     }
                     
                     /// ✅ Аналитика заказов пользователя
-                    MonthlyAnalyticsView(isLoading: isLoading) { month in
-                        OrderAnalytics.countsByStatus(
-                            orders: OrderModel.orders(forUser: user.userId),
-                            in: month,
-                            scope: .ownerOnly(user.userId)
-                        )
-                    }
-                    
-                    MonthlyServiceAnalyticsView(isLoading: false) { month in
+                    MonthlyServiceAnalyticsView(isLoading: isLoading) { month in
                         ServiceAnalytics.revenueByService(
                             orders: OrderModel.orders(forUser: user.userId),
                             in: month
                         )
                     }
                     
-                    // Actions (пример — плоские пропсы внутрь)
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 12),
-                                        GridItem(.flexible(), spacing: 12)], spacing: 12) {
-//                        ActionTile(icon: "star", title: "Get Help")
-//                            .anyButton(.press) {
-//                                router.showScreen(.push) { _ in
-//                                    EmptyView()
-//                                }
-//                            }
-//                        ActionTile(icon: "person.crop.circle.badge.plus", title: "Refer a Friend")
-//                            .anyButton(.press) {
-//                                router.showScreen(.push) { _ in
-//                                    EmptyView()
-//                                }
-//                            }
+                    MonthlyAnalyticsView(isLoading: isLoading) { month in
+                        OrderAnalytics.countsByStatus(
+                            orders: OrderModel.orders(forUser: user.userId),
+                            in: month,
+                            scope: .ownerOnly(user.userId)
+                        )
                     }
                 }
                 .padding(.horizontal, 15)
@@ -254,6 +188,28 @@ struct ProfileSubview: View {
             SettingsView()
                 .navigationBarBackButtonHidden()
         }
+        .navigationDestination(isPresented: $goToEditContacts) {
+            EditContactsView(
+                initialEmail: user.emailAddress,
+                initialPhone: user.phoneNumber,
+                initialCity: user.city,
+                initialAvatarURL: user.userImage,
+                initialAvatarData: avatarData
+            ) { email, phone, city, avatarData in
+                // Обновляем данные пользователя после сохранения (иммутабельная модель)
+                // City из EditContactsView приходит как displayName (String) — конвертируем обратно.
+                let newCity: City = City.allCases.first { $0.displayName == city } ?? user.city
+                user = user.updating(
+                    emailAddress: email,
+                    city: newCity,
+                    phoneNumber: phone
+                )
+                if let avatarData {
+                    self.avatarData = avatarData
+                }
+            }
+            .navigationBarBackButtonHidden()
+        }
         .coordinateSpace(name: "SCROLLVIEW")
         .task {
             await loadData()
@@ -264,6 +220,10 @@ struct ProfileSubview: View {
     // MARK: - Route helpers
     private func openSettings() {
         goToSettings = true
+    }
+    
+    private func openEditContacts() {
+        goToEditContacts = true
     }
     
     //MARK: - Load Data

@@ -24,8 +24,8 @@ struct Card<Content: View>: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(fill)
-                .shadow(color: .black.opacity(0.08), radius: 5, x: 5, y: 5)
-                .shadow(color: .black.opacity(0.05), radius: 5, x: -4, y: -4)
+                .shadow(color: .black.opacity(0.1), radius: 5, x: 5, y: 5)
+                .shadow(color: .black.opacity(0.04), radius: 5, x: -4, y: -4)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(strokeBG.opacity(strokeOpacity), style: StrokeStyle(lineWidth: 0.1, lineCap: .round, dash: [10, 0]))
@@ -58,16 +58,12 @@ struct CardHeader<Trailing: View>: View {
 }
 
 #Preview("AboutCard – long & collapsible") {
-//    AboutCard(
-//        bio: """
-//        Passionate iOS/SwiftUI developer. Loves clean architecture, animations, \
-//        and shipping delightful UX. Previously at SpaceX Apps, building internal \
-//        tooling and dashboards. Coffee-powered ☕️. Based in New York.
-//        """,
-//        collapsible: true,
-//        collapsedLines: 2
-//    )
-//    .padding()
+    ContactInfoCard(
+        email: UserModel.mock.emailAddress,
+        phone: UserModel.mock.phoneNumber,
+        city: UserModel.mock.city,
+    )
+    .padding()
 }
 
 
