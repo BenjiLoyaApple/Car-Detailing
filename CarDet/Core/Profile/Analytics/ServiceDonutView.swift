@@ -8,20 +8,9 @@
 import SwiftUI
 import Charts
 
-private final class LocalPriceFormatter {
-    static let shared = LocalPriceFormatter()
-    private let nf: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.locale = .current
-        return f
-    }()
-    func string(_ value: Double) -> String {
-        nf.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
-    }
-}
-
-// MARK: - Donut
+// ================================================================
+// MARK: - Donut Chart (Revenue by Services)
+// ================================================================
 
 struct ServiceDonutChart: View {
     let data: [ServiceRevenueSlice]
@@ -53,7 +42,7 @@ struct ServiceDonutChart: View {
     }
 
     var body: some View {
-        let donutSize: CGFloat = 250
+        let donutSize: CGFloat = 230
 
         Chart(chartData, id: \.id) { item in
             SectorMark(
@@ -65,36 +54,30 @@ struct ServiceDonutChart: View {
             .foregroundStyle(by: .value("Service", item.title))
             .opacity(selectedSlice == nil || selectedSlice?.service == item.service ? 1.0 : 0.3)
             .cornerRadius(2)
-            .accessibilityLabel(item.title)
-            .accessibilityValue(LocalPriceFormatter.shared.string(item.revenue))
         }
-        // Легенда справа, в одну колонку — дайте Chart достаточно ширины
-       // .chartLegend(position: .bottom, alignment: .center, spacing: 14)
-        .chartLegend(.hidden)
+        .chartLegend(position: .bottom, alignment: .center, spacing: 12)
         .chartPlotStyle { plot in
-            // Фиксируем размер только для пончика (plot), не всего Chart
             plot.frame(width: donutSize, height: donutSize)
         }
-        // УБРАНО жёсткое ограничение ширины всего Chart:
-       //  .frame(width: donutSize)
-        // Дадим занять доступную ширину карточки, чтобы справа поместилась колонка легенды
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity)
         .chartBackground { chartProxy in
             GeometryReader { geo in
                 if let anchor = chartProxy.plotFrame {
                     let f = geo[anchor]
                     VStack(spacing: 4) {
                         Text(LocalPriceFormatter.shared.string(selectedSlice?.revenue ?? totalRevenue))
-                            .font(.system(size: 19, weight: .bold))
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
                             .contentTransition(.numericText())
                             .animation(.easeInOut(duration: 0.9), value: selectedSlice?.revenue ?? totalRevenue)
 
-                        Text(selectedSlice?.title ?? "Всего")
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundStyle(.secondary)
-                            .id(selectedSlice?.id ?? DetailingService.exteriorWash) // стабилизируем transition
-                            .transition(.opacity)
-                            .animation(.easeInOut(duration: 0.25), value: selectedSlice?.id)
+                        ZStack {
+                            Text(selectedSlice?.title ?? "Всего")
+                                .font(.system(size: 12, weight: .light))
+                                .foregroundStyle(.secondary)
+                                .id(selectedSlice?.id.rawValue ?? "total")
+                                .transition(Twirl())
+                        }
+                        .animation(.bouncy(duration: 0.5), value: selectedSlice?.id)
                     }
                     .position(x: f.midX, y: f.midY)
                 }
@@ -104,13 +87,18 @@ struct ServiceDonutChart: View {
         .onAppear {
             progress = animateOnAppear ? 0 : 1
             if animateOnAppear {
-                withAnimation(.easeInOut(duration: 1.1)) { progress = 1 }
+                withAnimation(.easeInOut(duration: 1.1)) {
+                    progress = 1
+                }
             }
         }
     }
 }
 
+// ================================================================
 // MARK: - Breakdown list
+// ================================================================
+
 struct ServiceBreakdownList: View {
     let data: [ServiceRevenueSlice]
 
@@ -122,62 +110,55 @@ struct ServiceBreakdownList: View {
                         .font(.system(size: 14, weight: .light))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                    
                     Spacer(minLength: 0)
-                    
                     Text("\(s.count)x")
                         .font(.system(size: 10, weight: .light))
                         .foregroundStyle(.secondary)
-                    
                     Text(LocalPriceFormatter.shared.string(s.revenue))
                         .font(.system(size: 14, weight: .semibold))
-                    
                 }
             }
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Breakdown by service")
     }
 }
 
-// MARK: - Composite view (карточка)
+// ================================================================
+// MARK: - Composite view (Card + Chart + List)
+// ================================================================
+
 struct MonthlyServiceAnalyticsView: View {
     var isLoading: Bool = false
-    typealias ComputeSlices = (Date) -> [ServiceRevenueSlice]
-    let compute: ComputeSlices
+    var scope: OrderScope = .all
 
     @State private var month: Date = Date()
 
-    private func monthStart(_ date: Date) -> Date {
-        let cal = Calendar.current
-        let comps = cal.dateComponents([.year, .month], from: date)
-        return cal.date(from: comps) ?? date
+    private var data: [ServiceRevenueSlice] {
+        Analytics.revenueByService(
+            orders: OrderModel.mocks,
+            in: month,
+            scope: scope
+        )
     }
 
-    private var data: [ServiceRevenueSlice] { compute(monthStart(month)) }
     private var total: Double { data.reduce(0) { $0 + $1.revenue } }
 
     var body: some View {
         Card {
-            CardHeader(icon: "chart.pie.fill", title: "Services revenue")
+            CardHeader(icon: "chart.pie.fill", title: "Траты по услугам")
 
             if isLoading {
                 ActivitySummaryPlaceholder()
                     .padding(.top)
             } else {
-                VStack(alignment: .leading, spacing: 25) {
+                VStack(alignment: .leading, spacing: 20) {
                     ServiceDonutChart(data: data)
-                    
-                    MonthPicker(month: $month, minMonth: nil, maxMonth: Date())
-
+                    MonthPicker(month: $month, maxMonth: Date())
                     ServiceBreakdownList(data: data)
-                    
+
                     HStack {
                         Text("Итого:")
                             .font(.system(size: 14, weight: .semibold))
-                        
                         Spacer()
-                        
                         Text(LocalPriceFormatter.shared.string(total))
                             .font(.system(size: 16, weight: .bold))
                     }
@@ -188,51 +169,42 @@ struct MonthlyServiceAnalyticsView: View {
         .skeleton(isRedacted: isLoading)
         .allowsHitTesting(!isLoading)
     }
-    
-    //MARK: - Placeholder
+
+    // ============================================================
+    // MARK: - Placeholder (Skeleton)
+    // ============================================================
+
     @ViewBuilder
     private func ActivitySummaryPlaceholder() -> some View {
         let donutSize: CGFloat = 220
 
         HStack(alignment: .top, spacing: 40) {
-            VStack(alignment: .center, spacing: 30) {
+            VStack(spacing: 24) {
                 Circle()
                     .stroke(Color.primary.opacity(0.08), lineWidth: 30)
                     .frame(width: donutSize, height: donutSize)
                     .overlay {
                         VStack(spacing: 10) {
-                            placeholderBar(width: 110, height: 32, alpha: 0.15)
-                            placeholderBar(width: 90, height: 12, alpha: 0.1, corner: 6)
+                            placeholderBar(width: 90, height: 24, alpha: 0.15)
+                            placeholderBar(width: 70, height: 10, alpha: 0.1, corner: 6)
                         }
                     }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    RoundedRectangle(cornerRadius: 16)
-                        .frame(height: 30)
-                        .foregroundStyle(.gray.opacity(0.2))
-                        .padding(.vertical, 10)
-                        .padding(.bottom, 10)
 
-                    placeholderMetricRow(labelWidth: 152, valueWidth: 80)
-                    placeholderMetricRow(labelWidth: 100, valueWidth: 80)
-                    placeholderMetricRow(labelWidth: 146, valueWidth: 60)
-                    placeholderMetricRow(labelWidth: 124, valueWidth: 80)
+                VStack(spacing: 8) {
+                    ForEach(0..<4, id: \.self) { _ in
+                        placeholderMetricRow(labelWidth: .random(in: 120...160), valueWidth: .random(in: 60...80))
+                    }
                 }
             }
-            .padding(.leading, 10)
-            
-            
-            
         }
         .padding(.top, 10)
+        .redacted(reason: .placeholder)
     }
 
     private func placeholderMetricRow(labelWidth: CGFloat, valueWidth: CGFloat) -> some View {
         HStack(spacing: 8) {
             placeholderBar(width: labelWidth, height: 10, alpha: 0.10)
-            
             Spacer()
-            
             placeholderBar(width: valueWidth, height: 14, alpha: 0.16)
         }
     }
@@ -242,20 +214,33 @@ struct MonthlyServiceAnalyticsView: View {
             .fill(Color.primary.opacity(alpha))
             .frame(width: width, height: height)
     }
-    
 }
 
-// MARK: - Preview
-#Preview("Services Donut") {
-    VStack(spacing: 40) {
-        MonthlyServiceAnalyticsView(isLoading: true) { _ in [] }
+// ================================================================
+// MARK: - Local currency formatter
+// ================================================================
 
-        MonthlyServiceAnalyticsView(isLoading: false) { month in
-            ServiceAnalytics.revenueByService(
-                orders: OrderModel.mocks,
-                in: month
-            )
-        }
+private final class LocalPriceFormatter {
+    static let shared = LocalPriceFormatter()
+    private let nf: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.locale = .current
+        return f
+    }()
+    func string(_ value: Double) -> String {
+        nf.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
+    }
+}
+
+// ================================================================
+// MARK: - Preview
+// ================================================================
+
+#Preview("Services Revenue – Donut") {
+    VStack(spacing: 40) {
+        MonthlyServiceAnalyticsView(isLoading: true)
+        MonthlyServiceAnalyticsView(scope: .ownerOnly("user_01"))
     }
     .padding()
     .background(Color.themeBG)

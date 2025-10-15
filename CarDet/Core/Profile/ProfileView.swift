@@ -108,21 +108,32 @@ struct ProfileSubview: View {
                          openEditContacts()
                     }
                     
-                    /// ✅ Аналитика заказов пользователя
-                    MonthlyServiceAnalyticsView(isLoading: isLoading) { month in
-                        ServiceAnalytics.revenueByService(
-                            orders: OrderModel.orders(forUser: user.userId),
-                            in: month
-                        )
-                    }
+                    ///  /// 1️⃣ Активность по статусам заказов
+                    MonthlyAnalyticsView(
+                       scope: .ownerOnly(user.userId),
+                       isLoading: isLoading
+                    )
+
+                    /// 2️⃣ Выручка по услугам
+                    MonthlyServiceAnalyticsView(
+                        isLoading: isLoading,
+                        scope: .ownerOnly(user.userId)
+                    )
                     
-                    MonthlyAnalyticsView(isLoading: isLoading) { month in
-                        OrderAnalytics.countsByStatus(
-                            orders: OrderModel.orders(forUser: user.userId),
-                            in: month,
-                            scope: .ownerOnly(user.userId)
-                        )
-                    }
+//                    MonthlyServiceAnalyticsView(isLoading: isLoading) { month in
+//                        ServiceAnalytics.revenueByService(
+//                            orders: OrderModel.orders(forUser: user.userId),
+//                            in: month
+//                        )
+//                    }
+//                    
+//                    MonthlyAnalyticsView(isLoading: isLoading) { month in
+//                        OrderAnalytics.countsByStatus(
+//                            orders: OrderModel.orders(forUser: user.userId),
+//                            in: month,
+//                            scope: .ownerOnly(user.userId)
+//                        )
+//                    }
                 }
                 .padding(.horizontal, 15)
                 .padding(.bottom, 100)

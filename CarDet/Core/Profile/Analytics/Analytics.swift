@@ -9,113 +9,140 @@ import Foundation
 import Combine
 
 // ================================================================
-// MARK: - Adapters (композиционный слой фичи/экрана)
-// Подключай это расширение там, где реально используешь OrderModel.
-// Ядро не зависит от конкретной реализации.
+// MARK: - Protocols (универсальные контракты для аналитики)
 // ================================================================
 
-// Делает вашу доменную модель совместимой с ядром аналитики заказов
-extension OrderModel: OrderLike {
-    var orderDate: Date { date }
-    var ownerID: String { userId }
-    var orderStatus: OrderStatus { status }
-}
-
-/// Протокол для развязки аналитики от конкретной модели заказов.
+/// Базовый контракт для любой сущности, поддерживающей аналитику заказов.
 protocol OrderLike {
-    var orderDate: Date { get }        // одна дата заказа
-    var orderStatus: OrderStatus { get }
-    var ownerID: String { get }        // владелец заказа (пользователь)
+    var orderDate: Date { get }        // дата заказа
+    var orderStatus: OrderStatus { get } // статус
+    var ownerID: String { get }        // владелец (userId)
+}
+
+/// Расширенный контракт для заказов, содержащих позиции.
+protocol OrderWithItems: OrderLike {
+    var items: [OrderItem] { get }     // массив услуг
+}
+
+// Адаптация существующей модели
+extension OrderModel: OrderWithItems {
+    var orderDate: Date { date }
+    var orderStatus: OrderStatus { status }
+    var ownerID: String { userId }
 }
 
 // ================================================================
-// MARK: - Analytics Core (чистое ядро, без знаний о OrderModel)
+// MARK: - Scopes / Filters
 // ================================================================
 
-/// Кол-во заказов по статусу.
-struct StatusCount: Identifiable, Equatable {
-    let status: OrderStatus
-    let count: Int
-    var id: String { status.rawValue }
-}
-
-/// Семантический сахар для частых фильтров.
-/// Можно не использовать — см. главный API с `filter:`.
+/// Предопределённые фильтры (owner, car и т.д.)
 enum OrderScope {
     case all
-    case ownerOnly(String)         // заказы конкретного пользователя
-    // При необходимости можно добавить:
-    // case carOnly(String)
-    // case ownerAndCar(userId: String, carId: String)
+    case ownerOnly(String)
+    case carOnly(String)
+    case ownerAndCar(userId: String, carId: String)
 
-    /// Преобразуем scope в предикат.
     func toPredicate<T: OrderLike>() -> (T) -> Bool {
         switch self {
         case .all:
             return { _ in true }
         case .ownerOnly(let uid):
             return { $0.ownerID == uid }
+        case .carOnly(let carId):
+            if let t = T.self as? OrderModel.Type {
+                return { ($0 as? OrderModel)?.carId == carId }
+            }
+            return { _ in false }
+        case .ownerAndCar(let uid, let carId):
+            if let t = T.self as? OrderModel.Type {
+                return {
+                    guard let o = $0 as? OrderModel else { return false }
+                    return o.userId == uid && o.carId == carId
+                }
+            }
+            return { _ in false }
         }
     }
 }
 
-/// Чистая бизнес-логика (generic для любых типов, совместимых с OrderLike).
-enum OrderAnalytics {
-    /// Главный API: передай произвольный предикат-фильтр.
-    /// - Parameters:
-    ///   - orders: массив сущностей (например, [OrderModel])
-    ///   - monthOf: любая дата внутри интересующего месяца
-    ///   - calendar: календарь (по умолчанию текущий)
-    ///   - filter: предикат для дополнительной фильтрации (владелец, машина и т.д.)
+// ================================================================
+// MARK: - Aggregates / DTOs
+// ================================================================
+
+/// Кол-во заказов по статусу
+struct StatusCount: Identifiable, Equatable {
+    let status: OrderStatus
+    let count: Int
+    var id: String { status.rawValue }
+}
+
+/// Срез по услугам (кол-во и сумма)
+struct ServiceRevenueSlice: Identifiable, Equatable {
+    let service: DetailingService
+    let count: Int
+    let revenue: Double
+    var id: DetailingService { service }
+    var title: String { service.rawValue }
+}
+
+// ================================================================
+// MARK: - Unified Analytics Core
+// ================================================================
+
+enum Analytics {
+
+    // MARK: Orders by Status
     static func countsByStatus<T: OrderLike>(
         orders: [T],
         in monthOf: Date,
-        calendar: Calendar = .current,
-        filter: (T) -> Bool = { _ in true }
+        scope: OrderScope = .all,
+        calendar: Calendar = .current
     ) -> [StatusCount] {
-
         guard let monthInterval = calendar.dateInterval(of: .month, for: monthOf) else { return [] }
-
-        // 1) попадает ли заказ в месяц (по дате заказа)
-        @inline(__always)
-        func isInMonth(_ o: T) -> Bool {
-            monthInterval.contains(o.orderDate)
-        }
-
-        // 2) применяем фильтры и считаем
+        let predicate = scope.toPredicate() as (T) -> Bool
         var counts: [OrderStatus: Int] = [:]
-        counts.reserveCapacity(OrderStatus.allCases.count)
 
-        for o in orders where isInMonth(o) && filter(o) {
+        for o in orders where monthInterval.contains(o.orderDate) && predicate(o) {
             counts[o.orderStatus, default: 0] += 1
         }
 
-        // 3) возвращаем полный набор статусов (включая нули)
-        return OrderStatus.allCases.map { StatusCount(status: $0, count: counts[$0] ?? 0) }
+        return OrderStatus.allCases.map {
+            StatusCount(status: $0, count: counts[$0] ?? 0)
+        }
     }
 
-    /// Сахар: тот же подсчёт, но через `OrderScope`.
-    static func countsByStatus<T: OrderLike>(
+    // MARK: Revenue by Service
+    static func revenueByService<T: OrderWithItems>(
         orders: [T],
         in monthOf: Date,
-        scope: OrderScope,
+        scope: OrderScope = .all,
         calendar: Calendar = .current
-    ) -> [StatusCount] {
-        countsByStatus(
-            orders: orders,
-            in: monthOf,
-            calendar: calendar,
-            filter: scope.toPredicate()
-        )
+    ) -> [ServiceRevenueSlice] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: monthOf) else { return [] }
+        let predicate = scope.toPredicate() as (T) -> Bool
+
+        var counts: [DetailingService: Int] = [:]
+        var sums: [DetailingService: Double] = [:]
+
+        for order in orders where monthInterval.contains(order.orderDate) && predicate(order) {
+            for item in order.items {
+                counts[item.service, default: 0] += 1
+                sums[item.service, default: 0] += item.unitPrice
+            }
+        }
+
+        return DetailingService.allCases.compactMap {
+            guard let c = counts[$0], let s = sums[$0] else { return nil }
+            return ServiceRevenueSlice(service: $0, count: c, revenue: s)
+        }
+        .sorted { $0.revenue > $1.revenue }
     }
 }
 
 // ================================================================
-// MARK: - OrderStore (универсальный источник, generic)
+// MARK: - Async Store (Combine-friendly)
 // ================================================================
-/// Универсальный стор заказов.
-/// - Потокобезопасен: `@MainActor` гарантирует, что Published-свойства меняются на главном потоке.
-/// - `loader` инжектируется, можно подменять в тестах/превью.
+
 @MainActor
 final class OrderStore<T: OrderLike>: ObservableObject {
     @Published var orders: [T] = []
@@ -123,7 +150,7 @@ final class OrderStore<T: OrderLike>: ObservableObject {
     @Published var error: Error?
 
     private let loader: () async throws -> [T]
-    private var loadTask: Task<Void, Never>? // для отмены при повторной загрузке/деинициализации
+    private var loadTask: Task<Void, Never>?
 
     init(loader: @escaping () async throws -> [T]) {
         self.loader = loader
@@ -151,3 +178,19 @@ final class OrderStore<T: OrderLike>: ObservableObject {
         await loadTask?.value
     }
 }
+
+// ================================================================
+// MARK: - Preview Helpers (Mocks)
+// ================================================================
+
+#if DEBUG
+extension Analytics {
+    static func demoStatusCounts() -> [StatusCount] {
+        countsByStatus(orders: OrderModel.mocks, in: Date())
+    }
+
+    static func demoRevenueSlices() -> [ServiceRevenueSlice] {
+        revenueByService(orders: OrderModel.mocks, in: Date())
+    }
+}
+#endif

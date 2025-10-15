@@ -78,7 +78,6 @@ extension CarModel {
     private static let carToyota  = "car_toyota_camry"
     private static let carAudi    = "car_audi_a6"
     private static let carMerc    = "car_mercedes_gls450"
-    private static let carFord    = "car_ford_ranger"
     
     static var mocks: [Self] {
         [
@@ -127,7 +126,7 @@ extension CarModel {
                 mileage: 12000
             ),
             CarModel(
-                id: carFord,
+                id: carBMW,
                 userId: user3,
                 brand: "Ford",
                 model: "Ranger",

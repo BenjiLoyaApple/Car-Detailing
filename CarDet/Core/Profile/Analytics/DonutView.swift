@@ -8,7 +8,10 @@
 import SwiftUI
 import Charts
 
-// Визуализация распределения заказов по статусам в виде "пончика"
+// ================================================================
+// MARK: - Donut Chart (Orders by Status)
+// ================================================================
+
 struct MonthlyStatusDonutChart: View {
     let data: [StatusCount]
     var animateOnAppear: Bool = true
@@ -42,12 +45,13 @@ struct MonthlyStatusDonutChart: View {
         guard let a = selectedAngle else { return nil }
         return status(at: a)
     }
+    
     private var centerStatus: OrderStatus { selectedStatus ?? defaultCenterStatus }
     private var centerValue: Int { countsByStatus[centerStatus] ?? 0 }
 
     var body: some View {
         let donutSize: CGFloat = 170
-        
+
         Chart(chartData, id: \.id) { item in
             SectorMark(
                 angle: .value("Count", Double(item.count) * progress),
@@ -58,8 +62,6 @@ struct MonthlyStatusDonutChart: View {
             .foregroundStyle(by: .value("Status", item.status.rawValue))
             .opacity(selectedStatus == nil || selectedStatus == item.status ? 1.0 : 0.3)
             .cornerRadius(2)
-            .accessibilityLabel(item.status.rawValue)
-            .accessibilityValue("\(item.count)")
         }
         .chartLegend(position: .bottom, alignment: .center, spacing: 15)
         .chartPlotStyle { plot in
@@ -71,28 +73,26 @@ struct MonthlyStatusDonutChart: View {
                 if let anchor = chartProxy.plotFrame {
                     let f = geo[anchor]
                     VStack(spacing: 2) {
-                        // число — плавная цифровая анимация
                         Text("\(centerValue)")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                             .contentTransition(.numericText())
                             .animation(.easeInOut(duration: 1.0), value: centerValue)
-
-                        // подпись — простой fade при смене статуса
+                        
+//                        Text(centerStatus.rawValue)
+//                            .font(.system(size: 12, weight: .light))
+//                            .foregroundStyle(.secondary)
+//                            .id(centerStatus)
+//                            .transition(.opacity)
                         ZStack {
                             Text(centerStatus.rawValue)
                                 .font(.system(size: 12, weight: .light))
                                 .foregroundStyle(.secondary)
                                 .id(centerStatus)
-                                .transition(.opacity)
+                                .transition(Twirl())
                         }
-                        .frame(maxWidth: .infinity)
-                        .clipped()
-                        .animation(.easeInOut(duration: 0.3), value: centerStatus)
+                        .animation(.bouncy(duration: 0.5), value: centerStatus)
                     }
                     .position(x: f.midX, y: f.midY)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Selected status")
-                    .accessibilityValue("\(centerStatus.rawValue): \(centerValue)")
                 }
             }
         }
@@ -110,128 +110,88 @@ struct MonthlyStatusDonutChart: View {
     }
 }
 
-// Колонка с разбивкой по статусам
-struct StatusBreakdownColumn: View {
-    let counts: [StatusCount]
-    private var order: [OrderStatus] { counts.filter { $0.count > 0 }.map(\.status) }
+// ================================================================
+// MARK: - MonthlyAnalyticsView (Uses universal Analytics)
+// ================================================================
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ForEach(order, id: \.self) { status in
-                HStack(spacing: 6) {
-                    Text("\(status.rawValue):")
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundStyle(.secondary)
-                    Text("\(value(for: status))")
-                        .font(.system(size: 14, weight: .semibold))
-                }
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Breakdown by status")
-    }
-
-    private func value(for status: OrderStatus) -> Int {
-        counts.first(where: { $0.status == status })?.count ?? 0
-    }
-}
-
-// Виджет месячной аналитики: пончик + выбор месяца + разбивка
 struct MonthlyAnalyticsView: View {
-    /// Показывать плейсхолдер (бывший skeleton).
+    @State private var month: Date = Date()
+    var scope: OrderScope = .all
     var isLoading: Bool = false
 
-    /// DI: функция, считающая метрики для выбранного месяца.
-    typealias CountsComputer = (Date) -> [StatusCount]
-    let computeCounts: CountsComputer
-
-    @State private var month: Date = Date()
-
-    /// Нормализуем дату к началу месяца
-    private func monthStart(_ date: Date) -> Date {
-        let cal = Calendar.current
-        let comps = cal.dateComponents([.year, .month], from: date)
-        return cal.date(from: comps) ?? date
+    // Универсальная аналитика через новое ядро
+    private var counts: [StatusCount] {
+        Analytics.countsByStatus(
+            orders: OrderModel.mocks,
+            in: month,
+            scope: scope
+        )
     }
-
-    private var data: [StatusCount] { computeCounts(monthStart(month)) }
 
     var body: some View {
         Card {
-            CardHeader(icon: "chart.pie.fill", title: "Monthly activity")
+            CardHeader(icon: "chart.pie.fill", title: "Активность за месяц")
 
             if isLoading {
                 ActivitySummaryPlaceholder()
                     .padding(.top)
             } else {
                 HStack(alignment: .top, spacing: 30) {
-                    MonthlyStatusDonutChart(data: data)
-                    
+                    MonthlyStatusDonutChart(data: counts)
                     VStack(alignment: .leading, spacing: 10) {
-                        MonthPicker(
-                            month: $month,
-                            minMonth: nil,
-                            maxMonth: Date()
-                        )
-                        
-                        StatusBreakdownColumn(counts: data)
+                        MonthPicker(month: $month)
+                        StatusBreakdownColumn(counts: counts)
                     }
                 }
                 .padding(.top, 10)
             }
         }
-        .skeleton(isRedacted: isLoading)
-        .allowsHitTesting(!isLoading)
+        .animation(.easeInOut(duration: 0.3), value: isLoading)
     }
 
-    //MARK: - Placeholder
+    // ============================================================
+    // MARK: - Placeholder (Skeleton style)
+    // ============================================================
     @ViewBuilder
     private func ActivitySummaryPlaceholder() -> some View {
         let donutSize: CGFloat = 160
 
         HStack(alignment: .top, spacing: 40) {
-            VStack(alignment: .leading, spacing: 30) {
+            VStack(spacing: 24) {
                 Circle()
                     .stroke(Color.primary.opacity(0.08), lineWidth: 20)
                     .frame(width: donutSize, height: donutSize)
                     .overlay {
-                        VStack(spacing: 6) {
+                        VStack(spacing: 8) {
                             placeholderBar(width: 32, height: 32, alpha: 0.15)
                             placeholderBar(width: 56, height: 14, alpha: 0.1, corner: 6)
                         }
                     }
-                
-                VStack(spacing: 10) {
-                    ForEach(0..<2, id: \.self) { _ in
-                        HStack(spacing: 14) {
-                            ForEach(0..<2, id: \.self) { _ in
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(Color.primary.opacity(0.10))
-                                        .frame(width: 8, height: 8)
-                                    placeholderBar(width: 55, height: 8, alpha: 0.10)
-                                }
-                            }
+
+                VStack(spacing: 8) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        HStack(spacing: 8) {
+                            Circle().fill(Color.primary.opacity(0.10))
+                                .frame(width: 8, height: 8)
+                            placeholderBar(width: 60, height: 8, alpha: 0.10)
                         }
                     }
                 }
             }
-            .padding(.leading, 10)
-            
-            VStack(alignment: .leading, spacing: 6) {
+
+            VStack(alignment: .leading, spacing: 10) {
                 RoundedRectangle(cornerRadius: 16)
                     .frame(height: 30)
                     .foregroundStyle(.gray.opacity(0.2))
-                    .padding(.bottom, 10)
+                    .padding(.bottom, 8)
 
-                placeholderMetricRow(labelWidth: 52, valueWidth: 22)
-                placeholderMetricRow(labelWidth: 70, valueWidth: 22)
-                placeholderMetricRow(labelWidth: 46, valueWidth: 11)
-                placeholderMetricRow(labelWidth: 64, valueWidth: 22)
+                ForEach(0..<4, id: \.self) { _ in
+                    placeholderMetricRow(labelWidth: .random(in: 50...70), valueWidth: .random(in: 20...35))
+                }
             }
-            
         }
         .padding(.top, 10)
+        .redacted(reason: .placeholder)
     }
 
     private func placeholderMetricRow(labelWidth: CGFloat, valueWidth: CGFloat) -> some View {
@@ -248,28 +208,52 @@ struct MonthlyAnalyticsView: View {
     }
 }
 
+// ================================================================
+// MARK: - Breakdown Column
+// ================================================================
 
-// MARK: - Preview
-#Preview("Summary – Donut") {
-    VStack(spacing: 50) {
-        // Плейсхолдер
-        MonthlyAnalyticsView(isLoading: true) { _ in [] }
+struct StatusBreakdownColumn: View {
+    let counts: [StatusCount]
+    private var ordered: [OrderStatus] { counts.filter { $0.count > 0 }.map(\.status) }
 
-        // Игрушечные метрики (зависят от месяца) на OrderStatus
-        MonthlyAnalyticsView(isLoading: false) { month in
-            let m = Calendar.current.component(.month, from: month)
-            return OrderStatus.allCases.enumerated().map { idx, st in
-                StatusCount(status: st, count: (idx * 2 + m) % 7)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(ordered, id: \.self) { status in
+                HStack(spacing: 6) {
+                    Text("\(status.rawValue):")
+                        .font(.system(size: 12, weight: .light))
+                        .foregroundStyle(.secondary)
+                    Text("\(value(for: status))")
+                        .font(.system(size: 14, weight: .semibold))
+                }
             }
         }
     }
+
+    private func value(for status: OrderStatus) -> Int {
+        counts.first(where: { $0.status == status })?.count ?? 0
+    }
+}
+
+// ================================================================
+// MARK: - Preview
+// ================================================================
+
+#Preview("Monthly Analytics – With Placeholder") {
+    VStack(spacing: 40) {
+        MonthlyAnalyticsView(isLoading: true)
+        MonthlyAnalyticsView(scope: .ownerOnly("user_01"))
+    }
     .padding()
-    .background(Color.themeBG)
 }
 
 
-//MARK: - Month Drag Picker
 
+
+
+
+
+//MARK: - Month Drag Picker
 import SwiftUI
 
 struct MonthPicker: View {
