@@ -94,10 +94,6 @@ struct ProfileSubview: View {
     var size: CGSize
     var safeArea: EdgeInsets
 
-    /// пропсы для аналитики
-    //   let tasks: [TaskModel]
-    //   let tasksIsLoading: Bool
-    
     @State private var scrollProgress: CGFloat = 0
     @State private var textHeaderOffset: CGFloat = 0
     
@@ -167,6 +163,13 @@ struct ProfileSubview: View {
                             orders: OrderModel.orders(forUser: user.userId),
                             in: month,
                             scope: .ownerOnly(user.userId)
+                        )
+                    }
+                    
+                    MonthlyServiceAnalyticsView(isLoading: false) { month in
+                        ServiceAnalytics.revenueByService(
+                            orders: OrderModel.orders(forUser: user.userId),
+                            in: month
                         )
                     }
                     

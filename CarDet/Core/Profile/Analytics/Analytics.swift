@@ -61,7 +61,6 @@ enum OrderScope {
 
 /// Чистая бизнес-логика (generic для любых типов, совместимых с OrderLike).
 enum OrderAnalytics {
-
     /// Главный API: передай произвольный предикат-фильтр.
     /// - Parameters:
     ///   - orders: массив сущностей (например, [OrderModel])

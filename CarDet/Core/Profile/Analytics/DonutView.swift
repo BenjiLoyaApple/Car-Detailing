@@ -180,7 +180,7 @@ struct MonthlyAnalyticsView: View {
                 .padding(.top, 10)
             }
         }
-        // убрали .skeleton; можно добавить .redacted(reason:) при желании
+        .skeleton(isRedacted: isLoading)
         .allowsHitTesting(!isLoading)
     }
 
@@ -281,18 +281,6 @@ struct MonthPicker: View {
         RoundedRectangle(cornerRadius: 14, style: .continuous)
             .fill(Color.primary.opacity(0.06))
             .frame(height: 32)
-            .overlay {
-                HStack {
-                    Image(systemName: "chevron.left")
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                }
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.primary.opacity(0.5))
-                .padding(.horizontal, 8)
-            }
             .overlay {
                 ZStack {
                     Text(Self.titleFormatter.string(from: monthStart(month)))
