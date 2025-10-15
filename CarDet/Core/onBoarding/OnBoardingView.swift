@@ -275,7 +275,7 @@ struct OnBoardingView: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(width: size.width, height: size.height / 2)
                 
-                Text("Hello")
+                Text("Wellcome to the Future")
                     .font(.system(size: 24))
                     .fontWeight(.bold)
                     .padding(.top,55)
