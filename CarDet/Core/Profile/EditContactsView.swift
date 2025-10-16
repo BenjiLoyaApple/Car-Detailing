@@ -59,7 +59,6 @@ struct EditContactsView: View {
     }
 
     var body: some View {
-        NavigationStack {
         ZStack {
             VStack(alignment: .leading, spacing: 16) {
                 /// Header
@@ -135,7 +134,6 @@ struct EditContactsView: View {
                 SavingOverlay()
             }
         }
-    }
     }
 
     // MARK: - Валидация и сохранение

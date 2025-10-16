@@ -14,44 +14,44 @@ struct ContentViewTab: View {
     @State private var keyboardHeight: CGFloat = 0
     
     var body: some View {
-        ZStack(alignment: .bottom) {
-            Group {
-                TabView(selection: $activeTab) {
-                    HomeView()
-                        .tag(TabModel.home)
-                        .background {
-                            if !isTabBarHidden {
-                                HideTabBar {
-                                    isTabBarHidden = true
+            ZStack(alignment: .bottom) {
+                Group {
+                    TabView(selection: $activeTab) {
+                        HomeView()
+                            .tag(TabModel.home)
+                            .background {
+                                if !isTabBarHidden {
+                                    HideTabBar {
+                                        isTabBarHidden = true
+                                    }
                                 }
                             }
-                        }
-                    
-                    ProfileView()
-                        .tag(TabModel.profile)
+                        
+                        ProfileView()
+                            .tag(TabModel.profile)
+                    }
+                }
+                if keyboardHeight == 0 {
+                    CustomTabBar(activeTab: $activeTab)
+                        .transition(.move(edge: .bottom))
                 }
             }
-            if keyboardHeight == 0 {
-                CustomTabBar(activeTab: $activeTab)
-                    .transition(.move(edge: .bottom))
-            }
-        }
-        .onAppear {
-            // Подписываемся на изменения клавиатуры
-            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notif in
-                if let keyboardFrame = notif.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+            .onAppear {
+                // Подписываемся на изменения клавиатуры
+                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notif in
+                    if let keyboardFrame = notif.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                        withAnimation {
+                            keyboardHeight = keyboardFrame.height
+                        }
+                    }
+                }
+                
+                NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
                     withAnimation {
-                        keyboardHeight = keyboardFrame.height
+                        keyboardHeight = 0
                     }
                 }
             }
-            
-            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
-                withAnimation {
-                    keyboardHeight = 0
-                }
-            }
-        }
     }
 }
 

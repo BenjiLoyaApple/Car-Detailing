@@ -10,7 +10,7 @@ import SwiftUI
 struct InfoView: View {
     @Environment(\.dismiss) var dismiss
     var body: some View {
-        NavigationStack {
+     //   NavigationStack {
             ScrollView {
                 VStack(spacing: 10) {
                     Text("Xcode Releases")
@@ -48,7 +48,8 @@ struct InfoView: View {
                     }
                 }
             }
-        }
+            .background(Color.themeBG)
+     //   }
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
     }

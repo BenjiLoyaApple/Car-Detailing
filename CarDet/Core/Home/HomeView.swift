@@ -15,10 +15,11 @@ struct HomeView: View {
     
     
     var body: some View {
-        NavigationStack {
+     //   NavigationStack {
             VStack {
-                
+                Text("Hello, World!")
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .navigationTitle("Home")
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -49,7 +50,8 @@ struct HomeView: View {
                     .presentationDetents([.medium, .large])
                     .navigationTransition(.zoom(sourceID: "info", in: infoSpace))
             }
-        }
+            .background(Color.themeBG)
+     //   }
         // первая загрузка
         .task {
 //            await vm.load()

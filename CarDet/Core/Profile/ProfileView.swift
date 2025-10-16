@@ -6,15 +6,15 @@
 //
 
 import SwiftUI
+import SwiftfulRouting
 
 struct ProfileView: View {
-
+    @Environment(\.router) var router
     @State private var user: UserModel = .mock
     @State private var avatarData: Data? = nil
     @State private var isLoading: Bool = true
 
     var body: some View {
-        NavigationStack {
             GeometryReader { geo in
                 ProfileSubview(
                     user: $user,
@@ -26,7 +26,6 @@ struct ProfileView: View {
                 .background(Color.themeBG)
                 .ignoresSafeArea()
             }
-        }
     }
 }
 
@@ -36,7 +35,7 @@ struct ProfileView: View {
 
 //MARK: - Profile Subview
 struct ProfileSubview: View {
-
+    @Environment(\.router) var router
     @Binding var user: UserModel
     @Binding var avatarData: Data?
     @Binding var isLoading: Bool
@@ -180,11 +179,30 @@ struct ProfileSubview: View {
             .padding(.top, safeArea.top)
             .offset(y: -10)
         })
-        .navigationDestination(isPresented: $goToSettings) {
+        .coordinateSpace(name: "SCROLLVIEW")
+        .task {
+            await loadData()
+        }
+    }
+    
+
+    //MARK: - PUSH Helper
+    private func push<Content: View>(@ViewBuilder _ builder: @escaping () -> Content) {
+        router.showScreen(.push) { _ in builder() }
+    }
+
+    // MARK: - Route helpers
+    private func openSettings() {
+        push {
             SettingsView()
+                .environment(AppState())
                 .navigationBarBackButtonHidden()
         }
-        .navigationDestination(isPresented: $goToEditContacts) {
+    }
+    
+    
+    private func openEditContacts() {
+        push {
             EditContactsView(
                 initialEmail: user.emailAddress,
                 initialPhone: user.phoneNumber,
@@ -192,8 +210,6 @@ struct ProfileSubview: View {
                 initialAvatarURL: user.userImage,
                 initialAvatarData: avatarData
             ) { email, phone, city, avatarData in
-                // Обновляем данные пользователя после сохранения (иммутабельная модель)
-                // City из EditContactsView приходит как displayName (String) — конвертируем обратно.
                 let newCity: City = City.allCases.first { $0.displayName == city } ?? user.city
                 user = user.updating(
                     emailAddress: email,
@@ -206,20 +222,6 @@ struct ProfileSubview: View {
             }
             .navigationBarBackButtonHidden()
         }
-        .coordinateSpace(name: "SCROLLVIEW")
-        .task {
-            await loadData()
-        }
-    }
-    
-
-    // MARK: - Route helpers
-    private func openSettings() {
-        goToSettings = true
-    }
-    
-    private func openEditContacts() {
-        goToEditContacts = true
     }
     
     //MARK: - Load Data

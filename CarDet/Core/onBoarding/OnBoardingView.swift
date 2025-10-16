@@ -70,7 +70,7 @@ struct OnBoardingView: View {
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity,alignment: .leading)
                         
-                        Image(systemName: "cloud.fill")
+                        Image(systemName: "cloud")
                             .font(.title3)
                             .fontWeight(.semibold)
                         
