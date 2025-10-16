@@ -71,7 +71,7 @@ struct UserModel: Identifiable, Codable, Hashable {
 // MARK: - MOCKS (flat) + helpers как "сервисы"
 extension UserModel {
     static var mock: Self {
-        mocks[0]
+        mocks[1]
     }
     
     static var mocks: [Self] {

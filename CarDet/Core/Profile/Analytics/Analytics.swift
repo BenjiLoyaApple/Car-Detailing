@@ -49,12 +49,12 @@ enum OrderScope {
         case .ownerOnly(let uid):
             return { $0.ownerID == uid }
         case .carOnly(let carId):
-            if let t = T.self as? OrderModel.Type {
+            if T.self is OrderModel.Type {
                 return { ($0 as? OrderModel)?.carId == carId }
             }
             return { _ in false }
         case .ownerAndCar(let uid, let carId):
-            if let t = T.self as? OrderModel.Type {
+            if T.self is OrderModel.Type {
                 return {
                     guard let o = $0 as? OrderModel else { return false }
                     return o.userId == uid && o.carId == carId

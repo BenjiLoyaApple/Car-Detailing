@@ -119,21 +119,6 @@ struct ProfileSubview: View {
                         isLoading: isLoading,
                         scope: .ownerOnly(user.userId)
                     )
-                    
-//                    MonthlyServiceAnalyticsView(isLoading: isLoading) { month in
-//                        ServiceAnalytics.revenueByService(
-//                            orders: OrderModel.orders(forUser: user.userId),
-//                            in: month
-//                        )
-//                    }
-//                    
-//                    MonthlyAnalyticsView(isLoading: isLoading) { month in
-//                        OrderAnalytics.countsByStatus(
-//                            orders: OrderModel.orders(forUser: user.userId),
-//                            in: month,
-//                            scope: .ownerOnly(user.userId)
-//                        )
-//                    }
                 }
                 .padding(.horizontal, 15)
                 .padding(.bottom, 100)

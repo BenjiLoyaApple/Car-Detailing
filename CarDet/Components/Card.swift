@@ -25,7 +25,7 @@ struct Card<Content: View>: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(fill)
                 .shadow(color: .black.opacity(0.1), radius: 5, x: 5, y: 5)
-                .shadow(color: .black.opacity(0.04), radius: 5, x: -4, y: -4)
+                .shadow(color: .black.opacity(0.03), radius: 5, x: -4, y: -4)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(strokeBG.opacity(strokeOpacity), style: StrokeStyle(lineWidth: 0.1, lineCap: .round, dash: [10, 0]))

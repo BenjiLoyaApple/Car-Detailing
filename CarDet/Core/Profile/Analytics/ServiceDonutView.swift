@@ -8,10 +8,7 @@
 import SwiftUI
 import Charts
 
-// ================================================================
 // MARK: - Donut Chart (Revenue by Services)
-// ================================================================
-
 struct ServiceDonutChart: View {
     let data: [ServiceRevenueSlice]
     var animateOnAppear: Bool = true
@@ -65,7 +62,7 @@ struct ServiceDonutChart: View {
                 if let anchor = chartProxy.plotFrame {
                     let f = geo[anchor]
                     VStack(spacing: 4) {
-                        Text(LocalPriceFormatter.shared.string(selectedSlice?.revenue ?? totalRevenue))
+                        Text(formatRUB(selectedSlice?.revenue ?? totalRevenue))
                             .font(.system(size: 20, weight: .bold, design: .rounded))
                             .contentTransition(.numericText())
                             .animation(.easeInOut(duration: 0.9), value: selectedSlice?.revenue ?? totalRevenue)
@@ -95,10 +92,7 @@ struct ServiceDonutChart: View {
     }
 }
 
-// ================================================================
 // MARK: - Breakdown list
-// ================================================================
-
 struct ServiceBreakdownList: View {
     let data: [ServiceRevenueSlice]
 
@@ -114,7 +108,7 @@ struct ServiceBreakdownList: View {
                     Text("\(s.count)x")
                         .font(.system(size: 10, weight: .light))
                         .foregroundStyle(.secondary)
-                    Text(LocalPriceFormatter.shared.string(s.revenue))
+                    Text(formatRUB(s.revenue))
                         .font(.system(size: 14, weight: .semibold))
                 }
             }
@@ -122,10 +116,7 @@ struct ServiceBreakdownList: View {
     }
 }
 
-// ================================================================
 // MARK: - Composite view (Card + Chart + List)
-// ================================================================
-
 struct MonthlyServiceAnalyticsView: View {
     var isLoading: Bool = false
     var scope: OrderScope = .all
@@ -159,7 +150,7 @@ struct MonthlyServiceAnalyticsView: View {
                         Text("Итого:")
                             .font(.system(size: 14, weight: .semibold))
                         Spacer()
-                        Text(LocalPriceFormatter.shared.string(total))
+                        Text(formatRUB(total))
                             .font(.system(size: 16, weight: .bold))
                     }
                 }
@@ -170,10 +161,7 @@ struct MonthlyServiceAnalyticsView: View {
         .allowsHitTesting(!isLoading)
     }
 
-    // ============================================================
     // MARK: - Placeholder (Skeleton)
-    // ============================================================
-
     @ViewBuilder
     private func ActivitySummaryPlaceholder() -> some View {
         let donutSize: CGFloat = 220
@@ -216,32 +204,27 @@ struct MonthlyServiceAnalyticsView: View {
     }
 }
 
-// ================================================================
-// MARK: - Local currency formatter
-// ================================================================
-
-private final class LocalPriceFormatter {
-    static let shared = LocalPriceFormatter()
-    private let nf: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.locale = .current
-        return f
-    }()
-    func string(_ value: Double) -> String {
-        nf.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
-    }
+// MARK: - RUB plain formatter
+private func formatRUB(_ value: Double) -> String {
+    let f = NumberFormatter()
+    f.numberStyle = .decimal
+    f.maximumFractionDigits = 2
+    f.minimumFractionDigits = 0
+    f.groupingSeparator = Locale.current.groupingSeparator
+    f.decimalSeparator = Locale.current.decimalSeparator
+    let text = f.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
+    return "\(text) р."
 }
 
-// ================================================================
 // MARK: - Preview
-// ================================================================
-
 #Preview("Services Revenue – Donut") {
-    VStack(spacing: 40) {
-        MonthlyServiceAnalyticsView(isLoading: true)
-        MonthlyServiceAnalyticsView(scope: .ownerOnly("user_01"))
+    ScrollView {
+        VStack(spacing: 40) {
+            MonthlyServiceAnalyticsView(isLoading: true)
+            MonthlyServiceAnalyticsView(scope: .ownerOnly("user_01"))
+        }
     }
     .padding()
     .background(Color.themeBG)
+    .ignoresSafeArea()
 }
