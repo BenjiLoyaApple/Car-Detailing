@@ -31,13 +31,13 @@ struct HomeView: View {
                     }
                 }
                 
-                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+           //     ToolbarSpacer(.fixed, placement: .topBarTrailing)
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("info", systemImage: "info") {
                         showInfo.toggle()
                     }
                 }
-                .matchedTransitionSource(id: "info", in: infoSpace)
+          //      .matchedTransitionSource(id: "info", in: infoSpace)
                 
 //                ToolbarItem(placement: .bottomBar) {
 //                    Button("New", systemImage: "plus") {

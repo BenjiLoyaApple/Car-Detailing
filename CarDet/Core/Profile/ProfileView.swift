@@ -55,7 +55,7 @@ struct ProfileSubview: View {
 
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 12) {
-                // Аватар
+                /// Аватар
 //                AvatarView(
 //                    imageURL: user.userImage,
 //                    imageData: $avatarData,
@@ -107,13 +107,13 @@ struct ProfileSubview: View {
                          openEditContacts()
                     }
                     
-                    ///  /// 1️⃣ Активность по статусам заказов
+                     /// 1️⃣ Активность по статусам заказов
                     MonthlyAnalyticsView(
                        scope: .ownerOnly(user.userId),
                        isLoading: isLoading
                     )
 
-                    /// 2️⃣ Выручка по услугам
+                    /// 2️⃣ Активность по услугам
                     MonthlyServiceAnalyticsView(
                         isLoading: isLoading,
                         scope: .ownerOnly(user.userId)
