@@ -6,24 +6,27 @@
 //
 
 import SwiftUI
+import SwiftfulRouting
 
 struct AppView: View {
     @State var appState: AppState = AppState()
     ///Theme
-    //  @AppStorage("userTheme") private var userTheme: Theme = .systemDefault
+      @AppStorage("userTheme") private var userTheme: Theme = .systemDefault
     
     var body: some View {
-        AppViewBuilder(
-            showTabBar: appState.showTabBar,
-            tabbarView: {
-                ContentViewTab()
-            },
-            onboardingView: {
-                OnBoardingView()
-            }
-        )
-        //   .preferredColorScheme(userTheme.colorScheme)
-        .environment(appState)
+        RouterView { _ in
+            AppViewBuilder(
+                showTabBar: appState.showTabBar,
+                tabbarView: {
+                    ContentViewTab()
+                },
+                onboardingView: {
+                    OnBoardingView()
+                }
+            )
+            .preferredColorScheme(userTheme.colorScheme)
+            .environment(appState)
+        }
     }
 }
 

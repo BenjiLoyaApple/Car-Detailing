@@ -17,41 +17,38 @@ struct CarDetApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-//                if let errorMessage = errorMessage {
-                    // Показываем ошибку, если не прошел Face ID
-//                    CustomErrorView(
-//                        title: "Error",
-//                        imageName: "faceid",
-//                        description: errorMessage
-//                    )
-                    
-//                } else if isFaceIDAuthenticated || !isFaceIDEnabled {
+                if let errorMessage = errorMessage {
+//                     Показываем ошибку, если не прошел Face ID
+                    CustomErrorView(
+                        title: "Error",
+                        imageName: "faceid",
+                        description: errorMessage
+                    )
+                } else if isFaceIDAuthenticated || !isFaceIDEnabled {
                     // Основное приложение
-                //    RootToastView {
-                //        RouterView { _ in
+                    RootToastView {
                             AppView()
-              //          }
-               //     }
-//                } else {
-                    // Индикатор загрузки перед Face ID
-//                    ProgressView("Authenticating...")
-//                        .padding()
-//                }
+                    }
+                } else {
+//                     Индикатор загрузки перед Face ID
+                    ProgressView("Authenticating...")
+                        .padding()
+                }
             }
             .onAppear {
                 // Проверка Face ID при запуске приложения
-        //        authenticateWithFaceID()
+                authenticateWithFaceID()
             }
         }
     }
 //    // MARK: - Face ID Authentication
-//    private func authenticateWithFaceID() {
-//        FaceIDManager.authenticateIfNeeded(isFaceIDEnabled: isFaceIDEnabled) { success, errorMessage in
-//            if success {
-//                isFaceIDAuthenticated = true
-//            } else {
-//                self.errorMessage = errorMessage
-//            }
-//        }
-//    }
+    private func authenticateWithFaceID() {
+        FaceIDManager.authenticateIfNeeded(isFaceIDEnabled: isFaceIDEnabled) { success, errorMessage in
+            if success {
+                isFaceIDAuthenticated = true
+            } else {
+                self.errorMessage = errorMessage
+            }
+        }
+    }
 }
